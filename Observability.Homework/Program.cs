@@ -27,13 +27,14 @@
  */
 
 using Microsoft.AspNetCore.Mvc;
+using Observability.Homework.Extensions;
 using Observability.Homework.Models;
 using Observability.Homework.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<IPizzaBakeryService, PizzaBakeryService>();
-
+builder.AppLogging();
 var app = builder.Build();
 
 app.MapPost("/order", async ([FromBody] Order order, IPizzaBakeryService pizzaBakeryService, CancellationToken cancellationToken) =>
