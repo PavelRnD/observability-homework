@@ -38,9 +38,12 @@ var app = builder.Build();
 
 app.MapPost("/order", async ([FromBody] Order order, IPizzaBakeryService pizzaBakeryService, CancellationToken cancellationToken) =>
 {
-    if (order.Product.Type is ProductType.Pizza)
-        await pizzaBakeryService.DoPizza(order.Product, cancellationToken);
-    
+    using (app.Logger.BeginScope(new Dictionary<string, object> { { "ClientId", order.Client.Id } }))
+    {
+        app.Logger.LogInformation("request");
+        if (order.Product.Type is ProductType.Pizza)
+            await pizzaBakeryService.DoPizza(order.Product, cancellationToken);
+    }
     return Results.Ok(order.Product);
 });
 
