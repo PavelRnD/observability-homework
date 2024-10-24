@@ -30,15 +30,34 @@ using Microsoft.AspNetCore.Mvc;
 using Observability.Homework.Extensions;
 using Observability.Homework.Models;
 using Observability.Homework.Services;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
+var serviceName = "Observability.Homework";
 var builder = WebApplication.CreateBuilder(args);
-
+//builder.AppLogging();
+//Trace don,t work with logging=(
+builder.Logging.ClearProviders();
+builder.Services.AddOpenTelemetry().WithTracing(tcb =>
+{
+    tcb
+        .AddSource(serviceName)
+        .SetResourceBuilder(
+            ResourceBuilder.CreateDefault()
+                .AddService(serviceName: serviceName))
+       .AddAspNetCoreInstrumentation()
+       .AddJaegerExporter();
+});
+builder.Services.AddSingleton(TracerProvider.Default.GetTracer(serviceName));
 builder.Services.AddSingleton<IPizzaBakeryService, PizzaBakeryService>();
-builder.AppLogging();
+
 var app = builder.Build();
 
-app.MapPost("/order", async ([FromBody] Order order, IPizzaBakeryService pizzaBakeryService, CancellationToken cancellationToken) =>
+app.MapPost("/order", async ([FromServices] Tracer tracer, [FromBody] Order order, IPizzaBakeryService pizzaBakeryService, CancellationToken cancellationToken) =>
 {
+    using var span = tracer.StartActiveSpan("Request DoPizza");
+    span.SetAttribute("userId", order.Client.Id);
+    span.SetAttribute("productId", order.Product.Id.ToString());
     using (app.Logger.BeginScope(new Dictionary<string, object> { { "ClientId", order.Client.Id } }))
     {
         app.Logger.LogInformation("request");
