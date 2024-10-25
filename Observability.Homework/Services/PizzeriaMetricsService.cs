@@ -16,6 +16,8 @@ public class PizzeriaMetricsService
     private readonly Counter<int> _productTypeCounter;
     private readonly Counter<int> _productBurntCounter;
     private readonly Counter<int> _productCancelCounter; 
+    private readonly Histogram<double> _productCookingTime; 
+    private readonly Histogram<int> _productBakingCounter; 
     
     public PizzeriaMetricsService(IMeterFactory meterFactory)
     {
@@ -23,6 +25,8 @@ public class PizzeriaMetricsService
         _productTypeCounter = meter.CreateCounter<int>(ProductTypeMetricName);
         _productBurntCounter = meter.CreateCounter<int>(ProductBurntMetricName);
         _productCancelCounter = meter.CreateCounter<int>(ProductCancelMetricName);
+        _productCookingTime = meter.CreateHistogram<double>(ProductCookingTimeMetricName);
+        _productBakingCounter = meter.CreateHistogram<int>(ProductCookingCountMetricName);
     }
 
     public void ProductType(Product product)
@@ -43,8 +47,13 @@ public class PizzeriaMetricsService
         _productCancelCounter.Add(1);
     }
     
-    public void RecordProductCooking(Product product, double cookingTime)
+    public void RecordProductCooking(double cookingTime)
     {
-        
+        _productCookingTime.Record(cookingTime);
+    }
+    
+    public void ProductBakingCount(int bakingCount)
+    {
+        _productBakingCounter.Record(bakingCount);
     }
 }

@@ -19,10 +19,14 @@ using var tracerProvider = Sdk.CreateTracerProviderBuilder()
 Random random = new Random();
 while (true)
 {
-    using var httpClient = new HttpClient();
-    var order = Order.Create((ProductType)random.Next(0, 3));
-    var response = await httpClient.PostAsync("http://localhost:5216/order/", JsonContent.Create(order));
-    response.EnsureSuccessStatusCode();
-    Console.WriteLine("Response received successfully.{0}",order.Product.Type);
+    Parallel.For(0, 30,  _ =>
+    {
+        using var httpClient = new HttpClient();
+        var order = Order.Create((ProductType)random.Next(0, 3));
+        var response = httpClient.PostAsync("http://localhost:5216/order/", JsonContent.Create(order)).Result;
+        response.EnsureSuccessStatusCode();
+        Console.WriteLine("Response received successfully.{0}", order.Product.Type);
+    });
+
 }
 

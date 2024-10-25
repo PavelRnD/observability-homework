@@ -70,12 +70,14 @@ app.MapPost("/order", async ([FromServices] Tracer tracer,PizzeriaMetricsService
     span.SetAttribute("userId", order.Client.Id);
     span.SetAttribute("productId", order.Product.Id.ToString());
     metric.ProductType(order.Product);
+    DateTime start = DateTime.Now;
     using (app.Logger.BeginScope(new Dictionary<string, object> { { "ClientId", order.Client.Id } }))
     {
         app.Logger.LogInformation("request");
         if (order.Product.Type is ProductType.Pizza)
             await pizzaBakeryService.DoPizza(order.Product, cancellationToken);
     }
+    metric.RecordProductCooking((DateTime.Now-start).Microseconds);
     return Results.Ok(order.Product);
 });
 

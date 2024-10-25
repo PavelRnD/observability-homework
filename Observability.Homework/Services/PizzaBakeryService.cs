@@ -20,6 +20,7 @@ public class PizzaBakeryService(Tracer tracer, ILogger<PizzaBakeryService> logge
     public async Task<Product> DoPizza(Product product, CancellationToken cancellationToken = default)
     {
         logger.LogInformation("DoPizza id:{productId} type:{productType}",product.Id, product.Type);
+        _metrics.ProductBakingCount(_bake.Count);
         using var span = tracer.StartActiveSpan("DoPizza");
         try
         {
