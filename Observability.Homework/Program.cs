@@ -30,6 +30,7 @@ using Microsoft.AspNetCore.Mvc;
 using Observability.Homework.Extensions;
 using Observability.Homework.Models;
 using Observability.Homework.Services;
+using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
@@ -38,26 +39,37 @@ var builder = WebApplication.CreateBuilder(args);
 //builder.AppLogging();
 //Trace don,t work with logging=(
 builder.Logging.ClearProviders();
-builder.Services.AddOpenTelemetry().WithTracing(tcb =>
-{
-    tcb
-        .AddSource(serviceName)
-        .SetResourceBuilder(
-            ResourceBuilder.CreateDefault()
-                .AddService(serviceName: serviceName))
-       .AddAspNetCoreInstrumentation()
-       .AddJaegerExporter();
-});
+builder.Services
+    .AddOpenTelemetry()
+    // .WithTracing(tcb =>
+    // {
+    //     tcb
+    //         .AddSource(serviceName)
+    //         .SetResourceBuilder(
+    //             ResourceBuilder.CreateDefault()
+    //                 .AddService(serviceName: serviceName))
+    //        .AddAspNetCoreInstrumentation()
+    //        .AddJaegerExporter();
+    // }) 
+    .WithMetrics(mpb => mpb
+            .AddAspNetCoreInstrumentation()
+            //.AddRuntimeInstrumentation()
+            //.AddProcessInstrumentation()
+            .AddPrometheusExporter()
+        .AddMeter(PizzeriaMetricsService.MeterName)
+    );
 builder.Services.AddSingleton(TracerProvider.Default.GetTracer(serviceName));
 builder.Services.AddSingleton<IPizzaBakeryService, PizzaBakeryService>();
+builder.Services.AddSingleton<PizzeriaMetricsService>();
 
 var app = builder.Build();
-
-app.MapPost("/order", async ([FromServices] Tracer tracer, [FromBody] Order order, IPizzaBakeryService pizzaBakeryService, CancellationToken cancellationToken) =>
+app.MapPrometheusScrapingEndpoint();
+app.MapPost("/order", async ([FromServices] Tracer tracer,PizzeriaMetricsService metric, [FromBody] Order order, IPizzaBakeryService pizzaBakeryService, CancellationToken cancellationToken) =>
 {
     using var span = tracer.StartActiveSpan("Request DoPizza");
     span.SetAttribute("userId", order.Client.Id);
     span.SetAttribute("productId", order.Product.Id.ToString());
+    metric.ProductType(order.Product);
     using (app.Logger.BeginScope(new Dictionary<string, object> { { "ClientId", order.Client.Id } }))
     {
         app.Logger.LogInformation("request");

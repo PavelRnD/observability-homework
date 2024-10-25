@@ -20,8 +20,9 @@ Random random = new Random();
 while (true)
 {
     using var httpClient = new HttpClient();
-    var response = await httpClient.PostAsync("http://localhost:5216/order/", JsonContent.Create(Order.Create((ProductType)random.Next(0,2))));
+    var order = Order.Create((ProductType)random.Next(0, 3));
+    var response = await httpClient.PostAsync("http://localhost:5216/order/", JsonContent.Create(order));
     response.EnsureSuccessStatusCode();
-    Console.WriteLine("Response received successfully.");
+    Console.WriteLine("Response received successfully.{0}",order.Product.Type);
 }
 

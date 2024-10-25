@@ -11,8 +11,9 @@ public interface IPizzaBakeryService
     Task<Product> DoPizza(Product product, CancellationToken cancellationToken = default);
 }
 
-public class PizzaBakeryService(Tracer tracer, ILogger<PizzaBakeryService> logger) : IPizzaBakeryService
+public class PizzaBakeryService(Tracer tracer, ILogger<PizzaBakeryService> logger, PizzeriaMetricsService pizzeriaMetricsService) : IPizzaBakeryService
 {
+    private readonly PizzeriaMetricsService _metrics = pizzeriaMetricsService;
     private readonly Tracer _tracer = tracer;
     private readonly ConcurrentDictionary<Guid, Product> _bake = new();
 
@@ -29,6 +30,7 @@ public class PizzaBakeryService(Tracer tracer, ILogger<PizzaBakeryService> logge
         }
         catch (OperationCanceledException ex)
         {
+            _metrics.ProductCancel();
             logger.LogError("PizzaBakeryService cancel do pizza");
             span.SetStatus(Status.Error.WithDescription("PizzaBakeryService cancel do pizza"));
             span.RecordException(ex);
@@ -37,6 +39,7 @@ public class PizzaBakeryService(Tracer tracer, ILogger<PizzaBakeryService> logge
         }
         catch (BurntPizzaException ex)
         {
+            _metrics.ProductBurnt();
             logger.LogError("PizzaBakeryService burnt pizza");
             span.SetStatus(Status.Error.WithDescription("PizzaBakeryService burnt pizza"));
             span.RecordException(ex);
