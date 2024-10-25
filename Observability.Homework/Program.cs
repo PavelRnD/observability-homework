@@ -41,16 +41,16 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
 builder.Services
     .AddOpenTelemetry()
-    // .WithTracing(tcb =>
-    // {
-    //     tcb
-    //         .AddSource(serviceName)
-    //         .SetResourceBuilder(
-    //             ResourceBuilder.CreateDefault()
-    //                 .AddService(serviceName: serviceName))
-    //        .AddAspNetCoreInstrumentation()
-    //        .AddJaegerExporter();
-    // }) 
+    .WithTracing(tcb =>
+    {
+         tcb
+          .AddSource(serviceName)
+            .SetResourceBuilder(
+               ResourceBuilder.CreateDefault()
+                    .AddService(serviceName: serviceName))
+           .AddAspNetCoreInstrumentation()
+         .AddJaegerExporter();
+    }) 
     .WithMetrics(mpb => mpb
             .AddAspNetCoreInstrumentation()
             //.AddRuntimeInstrumentation()
